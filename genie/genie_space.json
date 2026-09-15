@@ -1,0 +1,280 @@
+{
+  "version": 2,
+  "config": {
+    "sample_questions": [
+      {
+        "id": "10000000000000000000000000000001",
+        "question": [
+          "Quais aeroportos e rotas concentram os maiores atrasos de partida no Brasil?"
+        ]
+      },
+      {
+        "id": "10000000000000000000000000000002",
+        "question": [
+          "Como o atraso evolui ao longo do dia?"
+        ]
+      },
+      {
+        "id": "10000000000000000000000000000003",
+        "question": [
+          "Qual companhia entrega melhor pontualidade e menor taxa de cancelamento?"
+        ]
+      },
+      {
+        "id": "10000000000000000000000000000004",
+        "question": [
+          "Voos internacionais atrasam mais que domesticos? Em quais aeroportos a diferenca e maior?"
+        ]
+      },
+      {
+        "id": "10000000000000000000000000000005",
+        "question": [
+          "Quanto atraso as companhias recuperam em voo, e em que rotas isso nao acontece?"
+        ]
+      }
+    ]
+  },
+  "data_sources": {
+    "tables": [
+      {
+        "identifier": "voebem.gold.obt_voos"
+      }
+    ]
+  },
+  "instructions": {
+    "example_question_sqls": [
+      {
+        "id": "20000000000000000000000000000001",
+        "question": [
+          "Quais aeroportos do Brasil concentram os maiores atrasos de partida?"
+        ],
+        "sql": [
+          "SELECT\n",
+          "  nome_aeroporto_origem,\n",
+          "  municipio_origem,\n",
+          "  uf_origem,\n",
+          "  COUNT(*)                                                                   AS voos,\n",
+          "  ROUND(AVG(atraso_partida_min), 2)                                          AS atraso_medio_min,\n",
+          "  ROUND(100.0 * try_divide(SUM(CASE WHEN partida_pontual = false THEN 1 ELSE 0 END),\n",
+          "                           SUM(CASE WHEN partida_pontual IS NOT NULL THEN 1 ELSE 0 END)), 2) AS pct_atrasados\n",
+          "FROM voebem.gold.obt_voos\n",
+          "WHERE pais_origem = 'Brasil'\n",
+          "GROUP BY 1, 2, 3\n",
+          "HAVING COUNT(*) >= 5000\n",
+          "ORDER BY pct_atrasados DESC\n",
+          "LIMIT 10\n"
+        ]
+      },
+      {
+        "id": "20000000000000000000000000000002",
+        "question": [
+          "Quais rotas domesticas tem o maior atraso medio de partida?"
+        ],
+        "sql": [
+          "SELECT\n",
+          "  rota_municipios,\n",
+          "  rota_icao,\n",
+          "  COUNT(*)                                                                   AS voos,\n",
+          "  ROUND(AVG(atraso_partida_min), 2)                                          AS atraso_medio_min,\n",
+          "  ROUND(100.0 * try_divide(SUM(CASE WHEN partida_pontual = false THEN 1 ELSE 0 END),\n",
+          "                           SUM(CASE WHEN partida_pontual IS NOT NULL THEN 1 ELSE 0 END)), 2) AS pct_atrasados\n",
+          "FROM voebem.gold.obt_voos\n",
+          "WHERE escopo_voo = 'Domestico'\n",
+          "GROUP BY 1, 2\n",
+          "HAVING COUNT(*) >= 2000\n",
+          "ORDER BY atraso_medio_min DESC\n",
+          "LIMIT 10\n"
+        ]
+      },
+      {
+        "id": "20000000000000000000000000000003",
+        "question": [
+          "Como o atraso de partida evolui ao longo do dia?"
+        ],
+        "sql": [
+          "SELECT\n",
+          "  hora_partida_prevista                                                      AS hora,\n",
+          "  COUNT(*)                                                                   AS voos,\n",
+          "  ROUND(AVG(atraso_partida_min), 2)                                          AS atraso_medio_min,\n",
+          "  ROUND(100.0 * try_divide(SUM(CASE WHEN partida_pontual = false THEN 1 ELSE 0 END),\n",
+          "                           SUM(CASE WHEN partida_pontual IS NOT NULL THEN 1 ELSE 0 END)), 2) AS pct_atrasados\n",
+          "FROM voebem.gold.obt_voos\n",
+          "WHERE hora_partida_prevista IS NOT NULL\n",
+          "GROUP BY 1\n",
+          "ORDER BY 1\n"
+        ]
+      },
+      {
+        "id": "20000000000000000000000000000004",
+        "question": [
+          "Qual companhia entrega a melhor pontualidade e a menor taxa de cancelamento?"
+        ],
+        "sql": [
+          "SELECT\n",
+          "  nome_companhia,\n",
+          "  COUNT(*)                                                                   AS voos,\n",
+          "  ROUND(100.0 * SUM(CASE WHEN voo_cancelado THEN 1 ELSE 0 END) / COUNT(*), 2) AS pct_cancelados,\n",
+          "  ROUND(100.0 * try_divide(SUM(CASE WHEN partida_pontual = true THEN 1 ELSE 0 END),\n",
+          "                           SUM(CASE WHEN partida_pontual IS NOT NULL THEN 1 ELSE 0 END)), 2) AS pct_pontuais,\n",
+          "  ROUND(AVG(atraso_partida_min), 2)                                          AS atraso_medio_min\n",
+          "FROM voebem.gold.obt_voos\n",
+          "GROUP BY 1\n",
+          "HAVING COUNT(*) >= 10000\n",
+          "ORDER BY pct_pontuais DESC\n"
+        ]
+      },
+      {
+        "id": "20000000000000000000000000000005",
+        "question": [
+          "Voos internacionais atrasam mais que domesticos? Quanto?"
+        ],
+        "sql": [
+          "SELECT\n",
+          "  escopo_voo,\n",
+          "  COUNT(*)                                                                   AS voos,\n",
+          "  ROUND(AVG(atraso_partida_min), 2)                                          AS atraso_medio_min,\n",
+          "  ROUND(100.0 * try_divide(SUM(CASE WHEN partida_pontual = false THEN 1 ELSE 0 END),\n",
+          "                           SUM(CASE WHEN partida_pontual IS NOT NULL THEN 1 ELSE 0 END)), 2) AS pct_atrasados\n",
+          "FROM voebem.gold.obt_voos\n",
+          "GROUP BY 1\n",
+          "ORDER BY voos DESC\n"
+        ]
+      },
+      {
+        "id": "20000000000000000000000000000006",
+        "question": [
+          "Em quais aeroportos brasileiros a diferenca de atraso entre internacional e domestico e maior?"
+        ],
+        "sql": [
+          "SELECT\n",
+          "  nome_aeroporto_origem,\n",
+          "  municipio_origem,\n",
+          "  SUM(CASE WHEN escopo_voo = 'Domestico'     THEN 1 ELSE 0 END)              AS voos_domesticos,\n",
+          "  SUM(CASE WHEN escopo_voo = 'Internacional' THEN 1 ELSE 0 END)              AS voos_internacionais,\n",
+          "  ROUND(AVG(CASE WHEN escopo_voo = 'Domestico'     THEN atraso_partida_min END), 2) AS atraso_domestico,\n",
+          "  ROUND(AVG(CASE WHEN escopo_voo = 'Internacional' THEN atraso_partida_min END), 2) AS atraso_internacional,\n",
+          "  ROUND(AVG(CASE WHEN escopo_voo = 'Internacional' THEN atraso_partida_min END)\n",
+          "      - AVG(CASE WHEN escopo_voo = 'Domestico'     THEN atraso_partida_min END), 2) AS diferenca_min\n",
+          "FROM voebem.gold.obt_voos\n",
+          "WHERE pais_origem = 'Brasil'\n",
+          "GROUP BY 1, 2\n",
+          "HAVING SUM(CASE WHEN escopo_voo = 'Internacional' THEN 1 ELSE 0 END) >= 2000\n",
+          "   AND SUM(CASE WHEN escopo_voo = 'Domestico'     THEN 1 ELSE 0 END) >= 2000\n",
+          "ORDER BY diferenca_min DESC\n",
+          "LIMIT 10\n"
+        ]
+      },
+      {
+        "id": "20000000000000000000000000000007",
+        "question": [
+          "Quanto atraso as companhias recuperam em voo?"
+        ],
+        "sql": [
+          "SELECT\n",
+          "  nome_companhia,\n",
+          "  COUNT(*)                                                                   AS voos,\n",
+          "  ROUND(AVG(atraso_partida_min), 2)                                          AS atraso_saida_min,\n",
+          "  ROUND(AVG(atraso_chegada_min), 2)                                          AS atraso_chegada_min,\n",
+          "  ROUND(AVG(minutos_recuperados), 2)                                         AS recuperados_medio_min\n",
+          "FROM voebem.gold.obt_voos\n",
+          "WHERE minutos_recuperados IS NOT NULL\n",
+          "GROUP BY 1\n",
+          "HAVING COUNT(*) >= 10000\n",
+          "ORDER BY recuperados_medio_min DESC\n"
+        ]
+      },
+      {
+        "id": "20000000000000000000000000000008",
+        "question": [
+          "Em quais rotas a recuperacao em voo nao acontece?"
+        ],
+        "sql": [
+          "SELECT\n",
+          "  rota_municipios,\n",
+          "  rota_icao,\n",
+          "  COUNT(*)                                                                   AS voos,\n",
+          "  ROUND(AVG(atraso_partida_min), 2)                                          AS atraso_saida_min,\n",
+          "  ROUND(AVG(atraso_chegada_min), 2)                                          AS atraso_chegada_min,\n",
+          "  ROUND(AVG(minutos_recuperados), 2)                                         AS recuperados_medio_min\n",
+          "FROM voebem.gold.obt_voos\n",
+          "WHERE minutos_recuperados IS NOT NULL\n",
+          "GROUP BY 1, 2\n",
+          "HAVING COUNT(*) >= 2000\n",
+          "ORDER BY recuperados_medio_min ASC\n",
+          "LIMIT 10\n"
+        ]
+      }
+    ],
+    "text_instructions": [
+      {
+        "id": "30000000000000000000000000000001",
+        "content": [
+          "Você é o analista de dados da VoeBem Analytics. Responde sobre pontualidade, atrasos e\n",
+          "cancelamentos de voos no Brasil, com base nos dados públicos do VRA da ANAC.\n",
+          "\n",
+          "Use SEMPRE a tabela voebem.gold.obt_voos. Ela é desnormalizada: nunca faça JOIN.\n",
+          "\n",
+          "DEFINIÇÕES DE NEGÓCIO (valem para toda resposta):\n",
+          "\n",
+          "- ATRASO é a diferença em minutos entre o horário real e o programado.\n",
+          "  atraso_partida_min para a saída, atraso_chegada_min para a chegada.\n",
+          "  Valor negativo significa adiantamento.\n",
+          "- PONTUAL é atraso de 15 minutos OU MENOS. As colunas partida_pontual e chegada_pontual\n",
+          "  já aplicam esse critério: não recalcule com o limiar na mão.\n",
+          "- VOO ATRASADO é partida_pontual = false. Nunca use \"NOT partida_pontual\" nem um ELSE,\n",
+          "  porque partida_pontual é NULL quando não dá para avaliar.\n",
+          "- RECUPERAÇÃO EM VOO é minutos_recuperados: o atraso de partida menos o de chegada.\n",
+          "  Positivo significa que a etapa chegou MENOS ATRASADA do que saiu — não significa que\n",
+          "  chegou no horário.\n",
+          "- CANCELADO é voo_cancelado = true. Voo cancelado NÃO tem horário real e por isso NÃO\n",
+          "  entra em nenhuma média de atraso nem em percentual de pontualidade. Ele só entra na\n",
+          "  taxa de cancelamento, que é cancelados sobre o total de voos.\n",
+          "\n",
+          "COMO CALCULAR PERCENTUAL DE ATRASO (sempre assim):\n",
+          "  ROUND(100.0 * try_divide(\n",
+          "      SUM(CASE WHEN partida_pontual = false THEN 1 ELSE 0 END),\n",
+          "      SUM(CASE WHEN partida_pontual IS NOT NULL THEN 1 ELSE 0 END)), 2)\n",
+          "O denominador é o número de voos que TÊM a métrica, não o total de voos. Usar o total\n",
+          "infla o percentual, porque cancelados e voos sem horário programado entram como atraso.\n",
+          "Use try_divide, e não a barra de divisão, para não quebrar em grupos sem denominador.\n",
+          "\n",
+          "PERGUNTA COM DUAS DIMENSOES (por exemplo \"aeroportos E rotas\", \"companhias E rotas\"):\n",
+          "responda UMA dimensao por vez, com uma consulta so. NUNCA junte dois agrupamentos\n",
+          "diferentes com UNION ou UNION ALL - isso gera SQL invalido e a resposta falha. Responda a\n",
+          "primeira dimensao citada e diga, no texto, que a segunda pode ser pedida na sequencia.\n",
+          "\n",
+          "PORTE DE OPERACAO significa VOLUME DE VOOS, medido por COUNT(*). \"Controlando por porte\"\n",
+          "quer dizer aplicar o corte minimo de volume no HAVING, e nada mais. NAO interprete porte\n",
+          "como tipo de linha, escopo do voo ou tamanho de aeronave.\n",
+          "\n",
+          "QUANDO A PERGUNTA CITA AEROPORTOS SEM DIZER O PAIS, considere apenas aeroportos\n",
+          "brasileiros: use pais_origem = 'Brasil'. Aeroporto estrangeiro aparece com o nome\n",
+          "AEROPORTO FORA DO CADASTRO ANAC e nao deve liderar um ranking sobre o Brasil.\n",
+          "\n",
+          "COMPARACAO DOMESTICO x INTERNACIONAL: comece pelo agregado por escopo_voo, que e a\n",
+          "resposta direta da pergunta. So depois, se a pergunta pedir \"em quais aeroportos\", abra\n",
+          "por aeroporto de origem brasileiro.\n",
+          "\n",
+          "RANKINGS: sempre corte por volume mínimo, senão uma companhia com 12 voos lidera qualquer\n",
+          "ranking. Use HAVING COUNT(*) >= 10000 para companhias, >= 5000 para aeroportos e >= 2000\n",
+          "para rotas. Diga na resposta qual corte foi usado.\n",
+          "\n",
+          "NOMES: mostre sempre nome_companhia, nome_aeroporto_origem, nome_aeroporto_destino ou\n",
+          "rota_municipios. Nunca devolva apenas o código ICAO para uma pessoa ler.\n",
+          "\n",
+          "ESCOPO: escopo_voo separa Domestico de Internacional. pais_origem e pais_destino\n",
+          "(Brasil ou Exterior) servem para recortar pelo lado do aeroporto. \"No Brasil\" significa\n",
+          "pais_origem = 'Brasil'.\n",
+          "\n",
+          "TEMPO: use hora_partida_prevista (0 a 23) para analisar o atraso ao longo do dia,\n",
+          "partida_prevista_data para série diária e mes_referencia para série mensal.\n",
+          "A janela de dados vai de agosto de 2025 a julho de 2026.\n",
+          "\n",
+          "DADOS AUSENTES: aeroporto estrangeiro não tem município nem UF, porque o cadastro da ANAC\n",
+          "só cobre o Brasil — nesse caso mostre o nome do aeroporto, que traz o código ICAO.\n",
+          "mes_referencia é nulo em voos sem horário programado.\n"
+        ]
+      }
+    ]
+  }
+}
