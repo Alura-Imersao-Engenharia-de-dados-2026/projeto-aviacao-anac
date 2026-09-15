@@ -69,4 +69,4 @@ Para contribuir, descreva a alteração e como verificou o resultado em um pull 
 
 ## Créditos
 
-Contexto educacional: Imersão Engenharia de Dados da Alura, setembro/2026. Fonte dos dados: ANAC, conforme `docs/fontes.md`. O código-base foi preservado a partir do material compartilhado da imersão, com ajustes de preparação para publicação. A autoria individual e a licença dos materiais ainda precisam ser confirmadas pelos responsáveis; nenhuma licença foi adicionada nesta preparação.
+Contexto educacional: Imersão Engenharia de Dados da Alura, setembro/2026. Fonte dos dados: ANAC, conforme `docs/fontes.md`. O código-base foi preservado a partir do material compartilhado da imersão, com ajustes de preparação para publicação. 
